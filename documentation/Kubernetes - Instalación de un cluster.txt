@@ -43,6 +43,13 @@
 - Instalación del software:
   # yum install -y docker kubelet kubeadm kubectl etcd
 
+- Editar la configuración de Docker para modificar el directorio de ejecución, y evitar futuros problemas de espacio:
+  # view /etc/docker/daemon.json
+  {
+      "graph": "/var/lib/data/docker",
+      "storage-driver": "overlay"
+  }
+
 - Parar y deshabilitar FW:
   # systemctl stop firewalld
   # systemctl disable firewalld
@@ -118,48 +125,48 @@
   # sudo docker save k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8 > k8s-dns-sidecar-amd64_1.14.8.tar
 
 - Subir las imágenes de docker a los servidores:
-  # md5sum /var/tmp/kube-apiserver-amd64_v1.10.2.tar
-  aa50d636a4fb7986c351529a0a96a1ea  /var/tmp/kube-apiserver-amd64_v1.10.2.tar
-  # md5sum /var/tmp/kube-controller-manager-amd64_v1.10.2.tar
-  f72547a0c96ff1ac72d0afce9645ab0f  /var/tmp/kube-controller-manager-amd64_v1.10.2.tar
-  # md5sum /var/tmp/kube-scheduler-amd64_v1.10.2.tar
-  90b2e5891f9f51e0e72a2903e45a3533  /var/tmp/kube-scheduler-amd64_v1.10.2.tar
-  # md5sum /var/tmp/etcd-amd64_3.1.12.tar
-  b81ea7964bbc31072d23280cae6af636  /var/tmp/etcd-amd64_3.1.12.tar
-  # md5sum /var/tmp/pause-amd64_3.1.tar
-  5874b3bdaaeb781f86766589d0c1fc59  /var/tmp/pause-amd64_3.1.tar
-  # md5sum /var/tmp/kube-proxy-amd64_v1.10.2.tar
-  9259d645021cb5aa265941bbd69d0635  /var/tmp/kube-proxy-amd64_v1.10.2.tar
-  # md5sum /var/tmp/cni_v1.11.0.tar
-  c4a14eb4a4e425b16e93a18f0881f62f  /var/tmp/cni_v1.11.0.tar
-  # md5sum /var/tmp/node_v2.6.2.tar
-  94345b62e27c5e51bf30472d86235c9d  /var/tmp/node_v2.6.2.tar
-  # md5sum /var/tmp/flannel_v0.9.1.tar
-  392e1c065a654772eb099c4898ca8e4f  /var/tmp/flannel_v0.9.1.tar
-  # md5sum /var/tmp/k8s-dns-kube-dns-amd64_1.14.8.tar
-  79cd18ce8a6c09428db4b4e0e9641033  /var/tmp/k8s-dns-kube-dns-amd64_1.14.8.tar
-  # md5sum /var/tmp/k8s-dns-dnsmasq-nanny-amd64_1.14.8.tar
-  7ba466cb0d1668245a3db51d5369ebfb  /var/tmp/k8s-dns-dnsmasq-nanny-amd64_1.14.8.tar
-  # md5sum /var/tmp/k8s-dns-sidecar-amd64_1.14.8.tar
-  3e3a91fcd8d29b39ea46017a5e5e3426  /var/tmp/k8s-dns-sidecar-amd64_1.14.8.tar
+  # md5sum /var/lib/data/kube-apiserver-amd64_v1.10.2.tar
+  aa50d636a4fb7986c351529a0a96a1ea  /var/lib/data/kube-apiserver-amd64_v1.10.2.tar
+  # md5sum /var/lib/data/kube-controller-manager-amd64_v1.10.2.tar
+  f72547a0c96ff1ac72d0afce9645ab0f  /var/lib/data/kube-controller-manager-amd64_v1.10.2.tar
+  # md5sum /var/lib/data/kube-scheduler-amd64_v1.10.2.tar
+  90b2e5891f9f51e0e72a2903e45a3533  /var/lib/data/kube-scheduler-amd64_v1.10.2.tar
+  # md5sum /var/lib/data/etcd-amd64_3.1.12.tar
+  b81ea7964bbc31072d23280cae6af636  /var/lib/data/etcd-amd64_3.1.12.tar
+  # md5sum /var/lib/data/pause-amd64_3.1.tar
+  5874b3bdaaeb781f86766589d0c1fc59  /var/lib/data/pause-amd64_3.1.tar
+  # md5sum /var/lib/data/kube-proxy-amd64_v1.10.2.tar
+  9259d645021cb5aa265941bbd69d0635  /var/lib/data/kube-proxy-amd64_v1.10.2.tar
+  # md5sum /var/lib/data/cni_v1.11.0.tar
+  c4a14eb4a4e425b16e93a18f0881f62f  /var/lib/data/cni_v1.11.0.tar
+  # md5sum /var/lib/data/node_v2.6.2.tar
+  94345b62e27c5e51bf30472d86235c9d  /var/lib/data/node_v2.6.2.tar
+  # md5sum /var/lib/data/flannel_v0.9.1.tar
+  392e1c065a654772eb099c4898ca8e4f  /var/lib/data/flannel_v0.9.1.tar
+  # md5sum /var/lib/data/k8s-dns-kube-dns-amd64_1.14.8.tar
+  79cd18ce8a6c09428db4b4e0e9641033  /var/lib/data/k8s-dns-kube-dns-amd64_1.14.8.tar
+  # md5sum /var/lib/data/k8s-dns-dnsmasq-nanny-amd64_1.14.8.tar
+  7ba466cb0d1668245a3db51d5369ebfb  /var/lib/data/k8s-dns-dnsmasq-nanny-amd64_1.14.8.tar
+  # md5sum /var/lib/data/k8s-dns-sidecar-amd64_1.14.8.tar
+  3e3a91fcd8d29b39ea46017a5e5e3426  /var/lib/data/k8s-dns-sidecar-amd64_1.14.8.tar
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 2. INSTALACIÓN NODO MASTER
 
 - Cargar las imágenes de docker:
-  # docker load < /var/tmp/kube-apiserver-amd64_v1.10.2.tar
-  # docker load < /var/tmp/kube-controller-manager-amd64_v1.10.2.tar
-  # docker load < /var/tmp/kube-scheduler-amd64_v1.10.2.tar
-  # docker load < /var/tmp/etcd-amd64_3.1.12.tar
-  # docker load < /var/tmp/pause-amd64_3.1.tar
-  # docker load < /var/tmp/kube-proxy-amd64_v1.10.2.tar
-  # docker load < /var/tmp/cni_v1.11.0.tar
-  # docker load < /var/tmp/node_v2.6.2.tar
-  # docker load < /var/tmp/flannel_v0.9.1.tar
-  # docker load < /var/tmp/k8s-dns-kube-dns-amd64_1.14.8.tar
-  # docker load < /var/tmp/k8s-dns-dnsmasq-nanny-amd64_1.14.8.tar
-  # docker load < /var/tmp/k8s-dns-sidecar-amd64_1.14.8.tar
+  # docker load < /var/lib/data/kube-apiserver-amd64_v1.10.2.tar
+  # docker load < /var/lib/data/kube-controller-manager-amd64_v1.10.2.tar
+  # docker load < /var/lib/data/kube-scheduler-amd64_v1.10.2.tar
+  # docker load < /var/lib/data/etcd-amd64_3.1.12.tar
+  # docker load < /var/lib/data/pause-amd64_3.1.tar
+  # docker load < /var/lib/data/kube-proxy-amd64_v1.10.2.tar
+  # docker load < /var/lib/data/cni_v1.11.0.tar
+  # docker load < /var/lib/data/node_v2.6.2.tar
+  # docker load < /var/lib/data/flannel_v0.9.1.tar
+  # docker load < /var/lib/data/k8s-dns-kube-dns-amd64_1.14.8.tar
+  # docker load < /var/lib/data/k8s-dns-dnsmasq-nanny-amd64_1.14.8.tar
+  # docker load < /var/lib/data/k8s-dns-sidecar-amd64_1.14.8.tar
 
 - Inicializar el master:
   # kubeadm init --kubernetes-version v1.10.2 --pod-network-cidr=10.244.0.0/16
@@ -194,14 +201,14 @@
 3. INSTALACIÓN NODOS WORKER
 
 - Cargar las imágenes de docker:
-  # docker load < /var/tmp/pause-amd64_3.1.tar
-  # docker load < /var/tmp/kube-proxy-amd64_v1.10.2.tar
-  # docker load < /var/tmp/cni_v1.11.0.tar
-  # docker load < /var/tmp/node_v2.6.2.tar
-  # docker load < /var/tmp/flannel_v0.9.1.tar
-  # docker load < /var/tmp/k8s-dns-kube-dns-amd64_1.14.8.tar
-  # docker load < /var/tmp/k8s-dns-dnsmasq-nanny-amd64_1.14.8.tar
-  # docker load < /var/tmp/k8s-dns-sidecar-amd64_1.14.8.tar
+  # docker load < /var/lib/data/pause-amd64_3.1.tar
+  # docker load < /var/lib/data/kube-proxy-amd64_v1.10.2.tar
+  # docker load < /var/lib/data/cni_v1.11.0.tar
+  # docker load < /var/lib/data/node_v2.6.2.tar
+  # docker load < /var/lib/data/flannel_v0.9.1.tar
+  # docker load < /var/lib/data/k8s-dns-kube-dns-amd64_1.14.8.tar
+  # docker load < /var/lib/data/k8s-dns-dnsmasq-nanny-amd64_1.14.8.tar
+  # docker load < /var/lib/data/k8s-dns-sidecar-amd64_1.14.8.tar
 
 - Incluir cada worker en el cluster:
   (con las opciones de token y hash que haya dado por salida la ejecución del comando kubeadm init, ejecutado en el nodo master)

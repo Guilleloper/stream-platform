@@ -12,14 +12,14 @@ A continuación se describen los pasos a seguir para desplegar uno más cluster 
   # sudo docker save flink:1.4.2 > flink_1.4.2.tar
 
 - Subir las imágenes de docker a los nodos worker:
-  # md5sum /var/tmp/flink_1.4.2.tar
-  e67d91772b4f497126920f19635af04f  /var/tmp/flink_1.4.2.tar
+  # md5sum /var/lib/data/flink_1.4.2.tar
+  e67d91772b4f497126920f19635af04f  /var/lib/data/flink_1.4.2.tar
 
 - Cargar las imágenes de docker en los nodos worker:
-  # docker load < /var/tmp/flink_1.4.2.tar
+  # docker load < /var/lib/data/flink_1.4.2.tar
 
 - Borrar fichero:
-  # rm -fr /var/tmp/flink_1.4.2.tar
+  # rm -fr /var/lib/data/flink_1.4.2.tar
 
 - Crear estructura de carpetas en NFS, desde cualquier nodo Worker:
   # mkdir /opt/Share_Stream/inventory
