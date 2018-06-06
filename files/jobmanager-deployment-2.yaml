@@ -1,0 +1,55 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: flink-jobmanager-2
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: flink
+        component: jobmanager
+        cluster_id: "2"
+    spec:
+      containers:
+      - name: jobmanager-2
+        image: flink:1.4.2
+        args:
+        - jobmanager
+        ports:
+        - containerPort: 6123
+          name: rpc
+        - containerPort: 6124
+          name: blob
+        - containerPort: 6125
+          name: query
+        - containerPort: 8081
+          name: ui
+        env:
+        - name: JOB_MANAGER_RPC_ADDRESS
+          value: "flink-jobmanager-2"
+        - name: JOB_MANAGER_HEAP_MB
+          value: "2048"
+        - name: CHECKPOINT_DIR
+          value: "/var/lib/flink/checkpoints"
+        volumeMounts:
+        - name: nfs-flink-checkpoints
+          mountPath: /var/lib/flink/checkpoints
+        - name: nfs-flink-config
+          mountPath: /var/lib/flink/config
+        - name: nfs-inventory
+          mountPath: /var/lib/inventory
+        command: ["/var/lib/flink/config/docker-entrypoint.sh"]
+      volumes:
+      - name: nfs-flink-checkpoints
+        hostPath:
+          path: /opt/Share_Stream/flink/checkpoints
+          type: Directory
+      - name: nfs-flink-config
+        hostPath:
+          path: /opt/Share_Stream/flink/config
+          type: Directory
+      - name: nfs-inventory
+        hostPath:
+          path: /opt/Share_Stream/inventory
+          type: Directory

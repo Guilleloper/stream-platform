@@ -1,0 +1,53 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: flink-taskmanager-1
+spec:
+  replicas: 6
+  template:
+    metadata:
+      labels:
+        app: flink
+        component: taskmanager
+        cluster_id: "1"
+    spec:
+      containers:
+      - name: taskmanager-1
+        image: flink:1.4.2
+        args:
+        - taskmanager
+        ports:
+        - containerPort: 6121
+          name: data
+        - containerPort: 6122
+          name: rpc
+        - containerPort: 6125
+          name: query
+        env:
+        - name: JOB_MANAGER_RPC_ADDRESS
+          value: "flink-jobmanager-1"
+        - name: TASK_MANAGER_HEAP_MB
+          value: "32768"
+        - name: CHECKPOINT_DIR
+          value: "/var/lib/flink/checkpoints"
+        volumeMounts:
+        - name: nfs-flink-checkpoints
+          mountPath: /var/lib/flink/checkpoints
+        - name: nfs-flink-config
+          mountPath: /var/lib/flink/config
+        - name: nfs-inventory
+          mountPath: /var/lib/inventory
+        command: ["/var/lib/flink/config/docker-entrypoint.sh"]
+      volumes:
+      - name: nfs-flink-checkpoints
+        hostPath:
+          path: /opt/Share_Stream/flink/checkpoints
+          type: Directory
+      - name: nfs-flink-config
+        hostPath:
+          path: /opt/Share_Stream/flink/config
+          type: Directory
+      - name: nfs-inventory
+        hostPath:
+          path: /opt/Share_Stream/inventory
+          type: Directory

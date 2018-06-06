@@ -1,0 +1,166 @@
+#!/bin/bash
+
+#########################################################################
+# SCRIPT PARA GESTIONAR LOS RECURSOS QUE CONFORMAN LOS CLUSTER DE FLINK #
+#########################################################################
+
+
+### VARIABLES ###
+
+# Ubicacion de los ficheros de definicion de Kubernetes
+K8S_DEF_PATH=/usr/share/flink/k8s-definitions
+
+
+### FUNCIONES ###
+
+start()
+{
+# Obtencion de variables internas
+JOBMANAGER_DEPLOY_FILE=${K8S_DEF_PATH}/jobmanager-deployment-${CLUSTER_ID}.yaml
+JOBMANAGER_SVC_FILE=${K8S_DEF_PATH}/jobmanager-service-${CLUSTER_ID}.yaml
+TASKMANAGER_DEPLOY_FILE=${K8S_DEF_PATH}/taskmanager-deployment-${CLUSTER_ID}.yaml
+
+# Comprobacion de los ficheros de definicion de Kubernetes
+if [ ! -e ${JOBMANAGER_DEPLOY_FILE} ]
+then
+  echo; echo "[ERROR] El fichero de definicion ${JOBMANAGER_DEPLOY_FILE} no existe"; echo; exit 2
+fi
+if [ ! -e ${JOBMANAGER_SVC_FILE} ]
+then
+  echo; echo "[ERROR] El fichero de definicion ${JOBMANAGER_SVC_FILE} no existe"; echo; exit 2
+fi
+if [ ! -e ${TASKMANAGER_DEPLOY_FILE} ]
+then
+  echo; echo "[ERROR] El fichero de definicion ${TASKMANAGER_DEPLOY_FILE} no existe"; echo; exit 2
+fi
+
+# Comprobacion del estado actual del cluster de Flink
+n_jobmanager_deploy=`kubectl get deployment -l cluster_id=${CLUSTER_ID} 2>/dev/null | grep "flink-jobmanager\-${CLUSTER_ID}" | wc -l`
+n_jobmanager_svc=`kubectl get svc 2>/dev/null | grep "flink-jobmanager\-${CLUSTER_ID}" | wc -l`
+n_taskmanager_deploy=`kubectl get deployment -l cluster_id=${CLUSTER_ID} 2>/dev/null | grep "flink-taskmanager\-${CLUSTER_ID}" | wc -l`
+
+# Arranque de recursos de Kubernetes para conformar el cluster de Flink
+flag_start=0
+echo; echo "[INFO] Arrancando cluster ${CLUSTER_ID} de Flink..."
+if [ ${n_jobmanager_deploy} -ne 0 ]
+then
+  echo "[INFO] El despliegue jobmanager-deployment-${CLUSTER_ID} se encuentra ya arrancado"
+else
+  echo "[INFO] Arrancando jobmanager-deployment-${CLUSTER_ID}..."
+  echo -n "  "; kubectl create -f ${JOBMANAGER_DEPLOY_FILE}; sleep 1;
+  flag_start=1
+fi
+if [ ${n_jobmanager_svc} -ne 0 ]
+then
+  echo "[INFO] El servicio jobmanager-service-${CLUSTER_ID} se encuentra ya arrancado"
+else
+  echo "[INFO] Arrancando jobmanager-service-${CLUSTER_ID}..."
+  echo -n "  "; kubectl create -f ${JOBMANAGER_SVC_FILE}; sleep 1;
+  flag_start=1
+fi
+if [ ${n_taskmanager_deploy} -ne 0 ]
+then
+  echo "[INFO] El despliegue taskmanager-deployment-${CLUSTER_ID} se encuentra ya arrancado"
+else
+  echo "[INFO] Arrancando taskmanager-deployment-${CLUSTER_ID}..."
+  echo -n "  "; kubectl create -f ${TASKMANAGER_DEPLOY_FILE}; sleep 1;
+  flag_start=1
+fi
+if [ ${flag_start} -eq 0 ]
+then
+  echo "[INFO] El cluster ${CLUSTER_ID} de Flink se encuentra ya arrancado"; echo
+else
+  echo "[INFO] Cluster ${CLUSTER_ID} de Flink arrancado. Compruebe su estado con el comando: kubectl get po -l cluster_id=${CLUSTER_ID}"; echo
+fi
+}
+
+stop()
+{
+# Comprobacion del estado actual del cluster de Flink
+n_jobmanager_deploy=`kubectl get deployment -l cluster_id=${CLUSTER_ID} 2>/dev/null | grep "flink-jobmanager\-${CLUSTER_ID}" | wc -l`
+n_jobmanager_svc=`kubectl get svc 2>/dev/null | grep "flink-jobmanager\-${CLUSTER_ID}" | wc -l`
+n_taskmanager_deploy=`kubectl get deployment -l cluster_id=${CLUSTER_ID} 2>/dev/null | grep "flink-taskmanager\-${CLUSTER_ID}" | wc -l`
+
+# Parda de recursos de Kubernetes para detener el cluster de Flink
+flag_stop=0
+echo; echo "[INFO] Deteniendo cluster ${CLUSTER_ID} de Flink..."
+if [ ${n_taskmanager_deploy} -eq 0 ]
+then
+  echo "[INFO] El despliegue taskmanager-deployment-${CLUSTER_ID} se encuentra ya detenido"
+else
+  echo "[INFO] Parando taskmanager-deployment-${CLUSTER_ID}..."
+  echo -n "  "; kubectl delete deployment flink-taskmanager-${CLUSTER_ID}; sleep 1;
+  flag_stop=1
+fi
+if [ ${n_jobmanager_svc} -eq 0 ]
+then
+  echo "[INFO] El servicio jobmanager-service-${CLUSTER_ID} se encuentra ya detenido"
+else
+  echo "[INFO] Parando jobmanager-service-${CLUSTER_ID}..."
+  echo -n "  "; kubectl delete svc flink-jobmanager-${CLUSTER_ID}; sleep 1;
+  flag_stop=1
+fi
+if [ ${n_jobmanager_deploy} -eq 0 ]
+then
+  echo "[INFO] El despliegue jobmanager-deployment-${CLUSTER_ID} se encuentra ya detenido"
+else
+  echo "[INFO] Parando jobmanager-deployment-${CLUSTER_ID}..."
+  echo -n "  ";  kubectl delete deployment flink-jobmanager-${CLUSTER_ID}; sleep 1;
+  flag_stop=1
+fi
+if [ ${flag_stop} -eq 0 ]
+then
+  echo "[INFO] El cluster ${CLUSTER_ID} de Flink se encuentra ya detenido"; echo
+else
+  echo "[INFO] Cluster ${CLUSTER_ID} de Flink detenido"; echo
+fi
+}
+
+status()
+{
+echo; kubectl get all -l cluster_id=${CLUSTER_ID}; echo
+}
+
+
+### PROGRAMA PRINCIPAL ###
+
+# Comprobacion de parametros de entrada
+if [ $# -ne 2 ]
+then
+  echo; echo "[ERROR] Sintaxis incorrecta."; echo "  Uso: flink-cluster [start|stop|restart|status] [CLUSTER_ID]"; echo; exit 1
+fi
+
+# Comprobacion del primer parametro
+if [ $1 != start ] && [ $1 != stop ] && [ $1 != restart ] && [ $1 != status ]
+then
+  echo; echo "[ERROR] Sintaxis incorrecta."; echo "  Uso: flink-cluster [start|stop|restart|status] [CLUSTER_ID]"; echo; exit 1
+fi
+
+# Comprobacion del segundo parametro
+CLUSTER_ID=$2
+number='^[0-9]+$'
+if ! [[ ${CLUSTER_ID} =~ ${number} ]] ;
+then
+  echo; echo "[ERROR] Sintaxis incorrecta."; echo "  Uso: flink-cluster [start|stop|restart|status] [CLUSTER_ID]"; echo; exit 1
+fi
+
+# Inicio
+case "$1" in
+start)
+  start
+;;
+stop)
+  stop
+;;
+restart)
+  stop
+  sleep 1
+  start
+;;
+status)
+  status
+;;
+esac
+
+# Fin
+exit 0
