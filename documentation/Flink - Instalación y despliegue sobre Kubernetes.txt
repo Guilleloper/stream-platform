@@ -1,0 +1,111 @@
+#####################################################
+# FLINK - INSTALACIÓN Y DESPLIEGUE SOBRE KUBERNETES #
+#####################################################
+
+
+A continuación se describen los pasos a seguir para desplegar uno más cluster de Flink sobre un cluster de Kubernetes funcional.
+
+
+- Obtener las imágenes de docker que serán necesarias:
+  (desde un equipo con conexión a Internet)
+  # sudo docker pull flink:1.4.2
+  # sudo docker save flink:1.4.2 > flink_1.4.2.tar
+
+- Subir las imágenes de docker a los nodos worker:
+  # md5sum /var/tmp/flink_1.4.2.tar
+  e67d91772b4f497126920f19635af04f  /var/tmp/flink_1.4.2.tar
+
+- Cargar las imágenes de docker en los nodos worker:
+  # docker load < /var/tmp/flink_1.4.2.tar
+
+- Borrar fichero:
+  # rm -fr /var/tmp/flink_1.4.2.tar
+
+- Crear estructura de carpetas en NFS, desde cualquier nodo Worker:
+  # mkdir /opt/Share_Stream/inventory
+  # mkdir -p /opt/Share_Stream/flink/checkpoints
+  # mkdir /opt/Share_Stream/flink/config
+
+- Definir estructura de carpetas a mapear en los contenedores:
+  Ubicación Física                            Ubicación en contenedor (JM y TM):
+  ------------------------------------------------------------------------------
+  /opt/Share_Stream/flink/checkpoints         /var/lib/flink/checkpoints
+  /opt/Share_Stream/flink/config              /var/lib/flink/config
+  /opt/Share_Stream/inventory                 /var/lib/inventory
+
+- Ubicar fichero "docker-entrypoint.sh", el cual será usado para arrancar los contenedores, desde cualquier nodo Worker:
+  # md5sum /opt/Share_Stream/flink/config/docker-entrypoint.sh
+  6203af3119a170af0651d3bc3fa9a819  /opt/Share_Stream/flink/config/docker-entrypoint.sh
+
+- Crear estructura de carpetas local en el nodo Master:
+  # mkdir -p /usr/share/flink/k8s-bin
+  # mkdir /usr/share/flink/k8s-definitions
+
+- Ubicar los ficheros de definición de Kubenetes para el despliegue de los cluster de Flink, en el nodo Master:
+  # ls -rtl /usr/share/flink/k8s-definitions
+  total 24
+  -rw-r--r--. 1 root root  272 Jun  4 10:57 jobmanager-service-1.yaml
+  -rw-r--r--. 1 root root  272 Jun  4 11:07 jobmanager-service-2.yaml
+  -rw-rw-r--. 1 root root 1483 Jun  4 13:01 jobmanager-deployment-1.yaml
+  -rw-r--r--. 1 root root 1440 Jun  4 13:02 taskmanager-deployment-1.yaml
+  -rw-r--r--. 1 root root 1440 Jun  5 14:54 taskmanager-deployment-2.yaml
+  -rw-rw-r--. 1 root root 1483 Jun  5 15:08 jobmanager-deployment-2.yaml
+
+- Editar los ficheros de definición de los "deployment" anteriores para ajustar los valores de memoria de la JVM de los JMs y TMs.
+
+- Lanzar los recursos de Kubernetes para conformar el cluster 1 de Flink (para el job beautify), en el nodo Master:
+  # kubectl create -f /usr/share/flink/k8s-definitions/jobmanager-deployment-1.yaml
+  # kubectl create -f /usr/share/flink/k8s-definitions/jobmanager-service-1.yaml
+  # kubectl create -f /usr/share/flink/k8s-definitions/taskmanager-deployment-1.yaml
+
+- Lanzar los recursos de Kubernetes para conformar el cluster 2 de Flink (para el job aggregator), en el nodo Master:
+  # kubectl create -f /usr/share/flink/k8s-definitions/jobmanager-deployment-2.yaml
+  # kubectl create -f /usr/share/flink/k8s-definitions/jobmanager-service-2.yaml
+  # kubectl create -f /usr/share/flink/k8s-definitions/taskmanager-deployment-2.yaml
+
+- Lanzar proxy de Kubernetes, en el nodo Master:
+  # kubectl proxy
+
+- Acceder a la consola de adminstración del JobManager:
+  Desde un navegador web acceder a la siguiente URL (tunelando puerto 8001 a local):
+  -> http://127.0.0.1:8001/api/v1/namespaces/default/services/flink-jobmanager-1:8081/proxy/
+  -> http://127.0.0.1:8001/api/v1/namespaces/default/services/flink-jobmanager-2:8081/proxy/
+
+- Ubicar el script "flink-cluster" que será usado para gestión de los cluster de Flink, en el nodo Master:
+  # md5sum /usr/share/flink/k8s-bin/flink-cluster
+  a0293f8db62b884e4ddbb2995f28d712  /usr/share/flink/k8s-bin/flink-cluster
+ 
+- Añadir el path del script a la variable PATH del usuario root: 
+  # view ${HOME}/.bash_profile
+  ...
+  # Flink k8-bin
+  PATH=$PATH:/usr/share/flink/k8s-bin
+  export PATH
+
+- Cerrar la sesión actual como usuario root y volver abrirla para poder hacer uso del comando "flink-cluster". Ejecutar el mismo sin argumentos para comprender su sintaxis.
+
+
+
+
+
+
+
+
+
+
+
+
+
+- Política de ubicación de los pods:
+nodeSelector -> para lanzar pods en un nodo en concreto
+https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+
+
+
+
+
+
+
+
+
+ 
