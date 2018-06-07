@@ -1,0 +1,129 @@
+#######################################
+# KAFKA - INSTALACIÓN Y CONFIGURACIÓN #
+#######################################
+
+
+1. INSTALACIÓN
+2. CONFIGURACIÓN
+3. COSAS PENDIENTES
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+1. INSTALACIÓN
+
+Los pasos indicados a continuación deben realizarse en todos y cada uno de los nodos que vayan a conformar el cluster de Kafka:
+
+- Subir el software a /var/tmp:
+  # md5sum /var/tmp/kafka_2.11-1.0.0.tgz
+  b652611004a992cd71f13b1dfe304b55  /var/tmp/kafka_2.11-1.0.0.tgz
+
+- Ubicar el software en /opt y desplegar:
+  # mv /var/tmp/kafka_2.11-1.0.0.tgz /opt
+  # cd /opt
+  # tar xvfz kafka_2.11-1.0.0.tgz
+  # rm /opt/kafka_2.11-1.0.0.tgz
+
+- Crear enlace simbólico para ubicar los logs en la partición deseada:
+  # mkdir /var/log/kafka
+  # cd /opt/kafka_2.11-1.0.0
+  # rm -fr logs/
+  # ln -s /var/log/kafka logs
+  # ls -rtl logs
+
+- Crear enlace simbólico para acceder a la configuración vía /etc:
+  # cd /etc
+  # ln -s /opt/kafka_2.11-1.0.0/config kafka
+  # ls -rtl kafka
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+2. CONFIGURACIÓN
+
+- Analizar el disco disponible y definir la estrategia de ubicación de los topics, asi como la retención de los datos:
+
+  TIPO DISCO      PUNTO MONTAJE       DISCO DISPONIBLE PARA KAFKA
+  --------------------------------------------------------------------------
+  SAS 15K         /var/lib/data        400 GB x6 =  2400 GB
+  SATA SSD        /var/lib/data_ssd   1840 GB x6 = 11040 GB <- Usaremos este
+  --------------------------------------------------------------------------
+                                    
+  TOPIC               BROKER      PUERTO  UBICACIÓN                           DISCO TOTAL     REPLICACION     DISCO EFECTIVO
+  --------------------------------------------------------------------------------------------------------------------------
+  raw_logs            1           9092    /var/lib/data_ssd/kafka-topics      1250 GB         factor 2        2500 GB
+  beautified_logs     1           9092    /var/lib/data_ssd/kafka-topics      4250 GB         factor 2        8500 GB
+  aggregated_metrics  2           9093    /var/lib/data/kafka-topics           500 GB         factor 2        1000 GB
+  control_flow        2           9093    /var/lib/data/kafka-topics           500 MB         factor 2           1 GB
+  --------------------------------------------------------------------------------------------------------------------------
+
+- Crear la ubicación de los datos de los topics:
+  # mkdir /var/lib/data_ssd/kafka
+  # mkdir /var/lib/data/kafka
+
+- Preparar dos ficheros de configuración, uno para cada Broker:
+  # cp -pr /opt/kafka_2.11-1.0.0/config/server.properties /opt/kafka_2.11-1.0.0/config/server-1.properties
+  # cp -pr /opt/kafka_2.11-1.0.0/config/server.properties /opt/kafka_2.11-1.0.0/config/server-2.properties
+
+- Configurar el Broker 1:
+  # view /opt/kafka_2.11-1.0.0/config/server-1.properties
+  ...
+  broker.id=1
+  listeners=PLAINTEXT://:9092
+  log.dirs=/var/lib/data_ssd/kafka
+  num.partitions=6
+  offsets.topic.replication.factor=2
+  transaction.state.log.replication.factor=2
+  transaction.state.log.min.isr=2
+  zookeeper.connect=node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181,node7:2181
+  group.initial.rebalance.delay.ms=3
+  ...
+  (cada nodo tiene que tener un broker.id único por cada Broker)
+
+- Configurar el Broker 2:
+  # view /opt/kafka_2.11-1.0.0/config/server-2.properties
+  ...
+  broker.id=11
+  listeners=PLAINTEXT://:9093
+  log.dirs=/var/lib/data/kafka
+  num.partitions=6
+  offsets.topic.replication.factor=2
+  transaction.state.log.replication.factor=2
+  transaction.state.log.min.isr=2
+  zookeeper.connect=node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181,node7:2181
+  group.initial.rebalance.delay.ms=3
+  ...
+  (cada nodo tiene que tener un broker.id único por cada Broker)
+
+- Arrancar los Broker de Kafka:
+  # /opt/kafka_2.11-1.0.0/bin/kafka-server-start.sh -daemon /opt/kafka_2.11-1.0.0/config/server-1.properties
+  # /opt/kafka_2.11-1.0.0/bin/kafka-server-start.sh -daemon /opt/kafka_2.11-1.0.0/config/server-2.properties
+  # jps
+
+- Arrancar un Topic de prueba:
+# /opt/kafka_2.11-1.0.0/bin/kafka-topics.sh --create --zookeeper prepro-flink01:2181,prepro-flink02:2181,prepro-flink03:2181,prepro-flink04:2181 --topic test-topic --partitions 2 --replication-factor 2
+# /opt/kafka_2.11-1.0.0/bin/kafka-topics.sh --list --zookeeper prepro-flink01:2181,prepro-flink02:2181,prepro-flink03:2181,prepro-flink04:2181
+
+- Crear un Productor y volcar su salida al Topic de prueba:
+# /opt/kafka_2.11-1.0.0/bin/kafka-console-producer.sh --broker-list prepro-flink01:9092,prepro-flink02:9092,prepro-flink03:9092,prepro-flink04:9092 --topic test-topic
+
+- Crear un Consumidor y leer el contenido del Topic de prueba:
+# /opt/kafka_2.11-1.0.0/bin/kafka-console-consumer.sh --zookeeper prepro-flink01:2181,prepro-flink02:2181,prepro-flink03:2181,prepro-flink04:2181 --topic test-topic --from-beginning
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+3. COSAS PENDIENTES
+
+- Configurar rotado y retención de los logs del propio Kafka
+
+- Configurar el Broker de Kafka como un servicio.
+
+
+
+PREGUNTAS
+
+KAFKA
+Duración del contenido de los Topic: ¿Cómo se configura?. ¿Qué valor tiene por defecto?.
+-> Tras un periodo de tiempo determinado o tras un tamaño determinado.
+
+Detener un Topic
+
+Detener un Broker
