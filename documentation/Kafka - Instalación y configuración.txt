@@ -35,6 +35,13 @@ Los pasos indicados a continuación deben realizarse en todos y cada uno de los 
   # ln -s /opt/kafka_2.11-1.0.0/config kafka
   # ls -rtl kafka
 
+- Añadir los comandos de Kafka a la variable PATH:
+  # view .bash_profile
+  ...
+  # Kafka PATH
+  PATH=$PATH:/opt/kafka_2.11-1.0.0/bin
+  export PATH
+
 -----------------------------------------------------------------------------------------------------------------------------
 
 2. CONFIGURACIÓN
@@ -47,24 +54,19 @@ Los pasos indicados a continuación deben realizarse en todos y cada uno de los 
   SATA SSD        /var/lib/data_ssd   1840 GB x6 = 11040 GB <- Usaremos este
   --------------------------------------------------------------------------
                                     
-  TOPIC               BROKER      PUERTO  UBICACIÓN                           DISCO TOTAL     REPLICACION     DISCO EFECTIVO
-  --------------------------------------------------------------------------------------------------------------------------
-  raw_logs            1           9092    /var/lib/data_ssd/kafka-topics      1250 GB         factor 2        2500 GB
-  beautified_logs     1           9092    /var/lib/data_ssd/kafka-topics      4250 GB         factor 2        8500 GB
-  aggregated_metrics  2           9093    /var/lib/data/kafka-topics           500 GB         factor 2        1000 GB
-  control_flow        2           9093    /var/lib/data/kafka-topics           500 MB         factor 2           1 GB
-  --------------------------------------------------------------------------------------------------------------------------
+  TOPIC               PUERTO  UBICACIÓN                           DISCO TOTAL     REPLICACION     DISCO EFECTIVO
+  --------------------------------------------------------------------------------------------------------------
+  raw_logs            9092    /var/lib/data_ssd/kafka             1000 GB         factor 2        2000 GB
+  beautified_logs     9092    /var/lib/data_ssd/kafka             4400 GB         factor 2        8800 GB
+  aggregated_metrics  9092    /var/lib/data_ssd/kafka              100 GB         factor 2         200 GB
+  control_flow        9092    /var/lib/data_sdd/kafka              500 MB         factor 2           1 GB
+  --------------------------------------------------------------------------------------------------------------
 
 - Crear la ubicación de los datos de los topics:
   # mkdir /var/lib/data_ssd/kafka
-  # mkdir /var/lib/data/kafka
-
-- Preparar dos ficheros de configuración, uno para cada Broker:
-  # cp -pr /opt/kafka_2.11-1.0.0/config/server.properties /opt/kafka_2.11-1.0.0/config/server-1.properties
-  # cp -pr /opt/kafka_2.11-1.0.0/config/server.properties /opt/kafka_2.11-1.0.0/config/server-2.properties
-
-- Configurar el Broker 1:
-  # view /opt/kafka_2.11-1.0.0/config/server-1.properties
+ 
+- Configurar el Broker:
+  # view /etc/kafka/server.properties
   ...
   broker.id=1
   listeners=PLAINTEXT://:9092
@@ -78,35 +80,58 @@ Los pasos indicados a continuación deben realizarse en todos y cada uno de los 
   ...
   (cada nodo tiene que tener un broker.id único por cada Broker)
 
-- Configurar el Broker 2:
-  # view /opt/kafka_2.11-1.0.0/config/server-2.properties
-  ...
-  broker.id=11
-  listeners=PLAINTEXT://:9093
-  log.dirs=/var/lib/data/kafka
-  num.partitions=6
-  offsets.topic.replication.factor=2
-  transaction.state.log.replication.factor=2
-  transaction.state.log.min.isr=2
-  zookeeper.connect=node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181,node7:2181
-  group.initial.rebalance.delay.ms=3
-  ...
-  (cada nodo tiene que tener un broker.id único por cada Broker)
-
 - Arrancar los Broker de Kafka:
-  # /opt/kafka_2.11-1.0.0/bin/kafka-server-start.sh -daemon /opt/kafka_2.11-1.0.0/config/server-1.properties
-  # /opt/kafka_2.11-1.0.0/bin/kafka-server-start.sh -daemon /opt/kafka_2.11-1.0.0/config/server-2.properties
+  # kafka-server-start.sh -daemon /etc/kafka/server.properties
   # jps
 
 - Arrancar un Topic de prueba:
-# /opt/kafka_2.11-1.0.0/bin/kafka-topics.sh --create --zookeeper prepro-flink01:2181,prepro-flink02:2181,prepro-flink03:2181,prepro-flink04:2181 --topic test-topic --partitions 2 --replication-factor 2
-# /opt/kafka_2.11-1.0.0/bin/kafka-topics.sh --list --zookeeper prepro-flink01:2181,prepro-flink02:2181,prepro-flink03:2181,prepro-flink04:2181
+  # kafka-topics.sh --create --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=1073741824000 --topic raw_logs
+  # kafka-topics.sh --create --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=4724464025600 --topic beautified_logs
+  # kafka-topics.sh --create --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=107374182400 --topic aggregated_metrics
+  # kafka-topics.sh --create --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=524288000 --topic control_flow
+
+- Comprobar la correcta creación de los Topics:
+  # kafka-topics.sh --list --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181
+  aggregated_metrics
+  beautified_logs
+  control_flow
+  raw_logs
+
+  # kafka-topics.sh --describe --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181
+  Topic:aggregated_metrics        PartitionCount:6        ReplicationFactor:2     Configs:retention.bytes=107374182400
+          Topic: aggregated_metrics       Partition: 0    Leader: 5       Replicas: 5,3   Isr: 5,3
+          Topic: aggregated_metrics       Partition: 1    Leader: 6       Replicas: 6,4   Isr: 6,4
+          Topic: aggregated_metrics       Partition: 2    Leader: 1       Replicas: 1,5   Isr: 1,5
+          Topic: aggregated_metrics       Partition: 3    Leader: 2       Replicas: 2,6   Isr: 2,6
+          Topic: aggregated_metrics       Partition: 4    Leader: 3       Replicas: 3,1   Isr: 3,1
+          Topic: aggregated_metrics       Partition: 5    Leader: 4       Replicas: 4,2   Isr: 4,2
+  Topic:beautified_logs   PartitionCount:6        ReplicationFactor:2     Configs:retention.bytes=4724464025600
+          Topic: beautified_logs  Partition: 0    Leader: 4       Replicas: 4,6   Isr: 4,6
+          Topic: beautified_logs  Partition: 1    Leader: 5       Replicas: 5,1   Isr: 5,1
+          Topic: beautified_logs  Partition: 2    Leader: 6       Replicas: 6,2   Isr: 6,2
+          Topic: beautified_logs  Partition: 3    Leader: 1       Replicas: 1,3   Isr: 1,3
+          Topic: beautified_logs  Partition: 4    Leader: 2       Replicas: 2,4   Isr: 2,4
+          Topic: beautified_logs  Partition: 5    Leader: 3       Replicas: 3,5   Isr: 3,5
+  Topic:control_flow      PartitionCount:6        ReplicationFactor:2     Configs:retention.bytes=524288000
+          Topic: control_flow     Partition: 0    Leader: 2       Replicas: 2,4   Isr: 2,4
+          Topic: control_flow     Partition: 1    Leader: 3       Replicas: 3,5   Isr: 3,5
+          Topic: control_flow     Partition: 2    Leader: 4       Replicas: 4,6   Isr: 4,6
+          Topic: control_flow     Partition: 3    Leader: 5       Replicas: 5,1   Isr: 5,1
+          Topic: control_flow     Partition: 4    Leader: 6       Replicas: 6,2   Isr: 6,2
+          Topic: control_flow     Partition: 5    Leader: 1       Replicas: 1,3   Isr: 1,3
+  Topic:raw_logs  PartitionCount:6        ReplicationFactor:2     Configs:retention.bytes=1073741824000
+          Topic: raw_logs Partition: 0    Leader: 5       Replicas: 5,4   Isr: 5,4
+          Topic: raw_logs Partition: 1    Leader: 6       Replicas: 6,5   Isr: 6,5
+          Topic: raw_logs Partition: 2    Leader: 1       Replicas: 1,6   Isr: 1,6
+          Topic: raw_logs Partition: 3    Leader: 2       Replicas: 2,1   Isr: 2,1
+          Topic: raw_logs Partition: 4    Leader: 3       Replicas: 3,2   Isr: 3,2
+          Topic: raw_logs Partition: 5    Leader: 4       Replicas: 4,3   Isr: 4,3
 
 - Crear un Productor y volcar su salida al Topic de prueba:
-# /opt/kafka_2.11-1.0.0/bin/kafka-console-producer.sh --broker-list prepro-flink01:9092,prepro-flink02:9092,prepro-flink03:9092,prepro-flink04:9092 --topic test-topic
+  # kafka-console-producer.sh --broker-list node1:9092,node2:9092,node3:9092,node4:9092,node5:9092,node6:9092 --topic raw_logs
 
 - Crear un Consumidor y leer el contenido del Topic de prueba:
-# /opt/kafka_2.11-1.0.0/bin/kafka-console-consumer.sh --zookeeper prepro-flink01:2181,prepro-flink02:2181,prepro-flink03:2181,prepro-flink04:2181 --topic test-topic --from-beginning
+  # kafka-console-consumer.sh --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181 --from-beginning --topic raw_logs
 
 -----------------------------------------------------------------------------------------------------------------------------
 
@@ -115,15 +140,3 @@ Los pasos indicados a continuación deben realizarse en todos y cada uno de los 
 - Configurar rotado y retención de los logs del propio Kafka
 
 - Configurar el Broker de Kafka como un servicio.
-
-
-
-PREGUNTAS
-
-KAFKA
-Duración del contenido de los Topic: ¿Cómo se configura?. ¿Qué valor tiene por defecto?.
--> Tras un periodo de tiempo determinado o tras un tamaño determinado.
-
-Detener un Topic
-
-Detener un Broker
