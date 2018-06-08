@@ -7,6 +7,7 @@
 2. INSTALACIÓN NODO MASTER
 3. INSTALACIÓN NODOS WORKER
 4. COMPROBACIONES
+5. COSAS PENDIENTES
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -223,4 +224,12 @@
 
 - Comprobar la correcta ejecución de los pods internos del cluster:
   # kubectl get po --all-namespaces -o wide
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+5. COSAS PENDIENTES
+
+- Hacer correr los procesos o servicio de Kubernetes con un usuario propio.
+- Identificar las comunicaciones internas entre nodos, habilitar el servicio firewalld y configurar las correspondientes reglas.
+
 

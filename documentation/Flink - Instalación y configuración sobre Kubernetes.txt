@@ -3,8 +3,12 @@
 #####################################################
 
 
-A continuación se describen los pasos a seguir para desplegar uno más cluster de Flink sobre un cluster de Kubernetes funcional.
+1. INSTALACIÓN
+2. COSAS PENDIENTES
 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+1. INSTALACIÓN
 
 - Obtener las imágenes de docker que serán necesarias:
   (desde un equipo con conexión a Internet)
@@ -84,28 +88,14 @@ A continuación se describen los pasos a seguir para desplegar uno más cluster 
 
 - Cerrar la sesión actual como usuario root y volver abrirla para poder hacer uso del comando "flink-cluster". Ejecutar el mismo sin argumentos para comprender su sintaxis.
 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+2. COSAS PENDIENTES
 
-
-
-
-
-
-
-
-
-
-
-- Política de ubicación de los pods:
+- Establecer una política de ubicación de los pods:
 nodeSelector -> para lanzar pods en un nodo en concreto
 https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
 
+- Crear y lanzar recursos de K8s para que las URLs estén accesibles desde el propio nodo Master, sin necesidad de tener que lanzar el kubectl proxy y acceder a través de la API de K8s.
 
 
-
-
-
-
-
-
- 

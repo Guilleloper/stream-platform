@@ -1,0 +1,81 @@
+###########################################
+# ZOOKEEPER - INSTALACIÓN Y CONFIGURACIÓN #
+###########################################
+
+
+1. INSTALACIÓN
+2. COSAS PENDIENTES
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+1. INSTALACIÓN
+
+- Instalar la JDK de Java (o actualizar su versión):
+  # md5sum /var/tmp/jdk-9.0.1_linux-x64_bin.rpm 
+  86cce47a74dfff3e224abe7a35ee7420  /var/tmp/jdk-9.0.1_linux-x64_bin.rpm
+  # rpm -iv /var/tmp/jdk-9.0.1_linux-x64_bin.rpm
+  # rpm -qi jdk-9.0.1
+
+[Instalación de Zookeeper con salida a Internet]
+- Añadir repo para instalar Zookeeper:
+  # cat <<EOF > /etc/yum.repos.d/bigtop.repo
+  [bigtop]
+  name=Bigtop
+  enabled=1
+  gpgcheck=1
+  type=NONE
+  baseurl=http://repos.bigtop.apache.org/releases/1.2.1/centos/7/x86_64
+  gpgkey=https://dist.apache.org/repos/dist/release/bigtop/KEYS
+  EOF
+
+[Instalación de Zookeeper con salida a Internet]
+- Instalar Zookeeper:
+  # yum install -y zookeeper
+
+[Instalación de Zookeeper sin salida a Internet]
+- Ubicar el software en los servidores:
+  # md5sum /var/tmp/bigtop-utils-1.2.1-1.el7.centos.noarch.rpm
+  7dc5508d5ac170948b90f1cfcae31bed  /var/tmp/bigtop-utils-1.2.1-1.el7.centos.noarch.rpm
+  # md5sum /var/tmp/zookeeper-3.4.6-1.el7.centos.x86_64.rpm
+  711b0e7321837351d7a0797b18804a8f  /var/tmp/zookeeper-3.4.6-1.el7.centos.x86_64.rpm
+
+[Instalación de Zookeeper sin salida a Internet]
+- Instalar el paquete:
+  # rpm -iv /var/tmp/bigtop-utils-1.2.1-1.el7.centos.noarch.rpm
+  # rpm -iv /var/tmp/zookeeper-3.4.6-1.el7.centos.x86_64.rpm
+
+- Configurar Zookeper:
+  # view /etc/zookeeper/conf/zoo.cfg
+  ...
+  clientPort=2181
+  server.1=nodo1:2888:3888
+  server.2=nodo2:2888:3888
+  server.3=nodo3:2888:3888
+  server.4=nodo4:2888:3888
+  server.5=nodo5:2888:3888
+  server.6=nodo6:2888:3888
+  server.7=nodo7:2888:3888
+  ...
+
+  # echo "1" > /var/lib/zookeeper/myid
+  (cada nodo con su id única, tal y como se indica en el fichero de configuración)
+
+- Deshabilitar servicio firewalld
+  # systemctl stop firewalld && systemctl disable firewalld)
+
+- Arrancar Zookeeper:
+  # zookeeper-server start
+
+- Comprobar el correcto arranque:
+  # zookeeper-server status
+  # jps
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+2. COSAS PENDIENTES
+
+- Configurar Zookeeper como un servicio.
+- Hacer correr los procesos o servicio de Zookeeper con un usuario propio.
+- Identificar las comunicaciones internas entre nodos y con otros sistemas (Kafka), habilitar el servicio firewalld y configurar las correspondientes reglas.
+
+

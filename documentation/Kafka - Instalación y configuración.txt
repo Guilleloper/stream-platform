@@ -138,5 +138,8 @@ Los pasos indicados a continuación deben realizarse en todos y cada uno de los 
 3. COSAS PENDIENTES
 
 - Configurar rotado y retención de los logs del propio Kafka
-
 - Configurar el Broker de Kafka como un servicio.
+- Hacer correr los procesos o servicio de Kafka con un usuario propio.
+- Identificar las comunicaciones internas entre nodos y con otros sistemas (ZooKeeper, Flink y Logstash), habilitar el servicio firewalld y configurar las correspondientes reglas.
+
+
