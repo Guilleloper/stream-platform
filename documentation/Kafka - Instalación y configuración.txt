@@ -14,33 +14,57 @@
 Los pasos indicados a continuación deben realizarse en todos y cada uno de los nodos que vayan a conformar el cluster de Kafka:
 
 - Subir el software a /var/tmp:
-  # md5sum /var/tmp/kafka_2.11-1.0.0.tgz
-  b652611004a992cd71f13b1dfe304b55  /var/tmp/kafka_2.11-1.0.0.tgz
+  # md5sum /var/tmp/jdk-8u131-linux-x64.rpm
+  9024d13ec651d07de450d465f14065a6  /var/tmp/jdk-8u131-linux-x64.rpm
+  # md5sum /var/tmp/kafka_2.11-0.11.0.2.tgz
+  40474611457eabcee610dac4fca22e7b  /var/tmp/kafka_2.11-0.11.0.2.tgz
 
-- Ubicar el software en /opt y desplegar:
-  # mv /var/tmp/kafka_2.11-1.0.0.tgz /opt
+- Comprobar la versión de java e instalar la JDK correspondiente si es necesario:
+  # java -version
+  # rpm -iv /var/tmp/jdk-8u131-linux-x64.rpm
+
+- Comprobar que la nueva versión de JAVA instalada no interfiere con resto de aplicativos (comprobar que el java por defecto sigue siendo el mismo):
+  # java -version
+  # update-alternatives --display java
+
+- Ubicar el software de Kafka en /opt y desplegar:
+  # mv /var/tmp/kafka_2.11-0.11.0.2.tgz /opt
   # cd /opt
-  # tar xvfz kafka_2.11-1.0.0.tgz
-  # rm /opt/kafka_2.11-1.0.0.tgz
+  # tar xvfz kafka_2.11-0.11.0.2.tgz
+  # rm /opt/kafka_2.11-0.11.0.2.tgz
 
 - Crear enlace simbólico para ubicar los logs en la partición deseada:
   # mkdir /var/log/kafka
-  # cd /opt/kafka_2.11-1.0.0
+  # cd /opt/kafka_2.11-0.11.0.2
   # rm -fr logs/
   # ln -s /var/log/kafka logs
   # ls -rtl logs
 
 - Crear enlace simbólico para acceder a la configuración vía /etc:
   # cd /etc
-  # ln -s /opt/kafka_2.11-1.0.0/config kafka
+  # ln -s /opt/kafka_2.11-0.11.0.2/config kafka
   # ls -rtl kafka
 
 - Añadir los comandos de Kafka a la variable PATH:
-  # view .bash_profile
+  # view $HOME/.bash_profile
   ...
   # Kafka PATH
-  PATH=$PATH:/opt/kafka_2.11-1.0.0/bin
+  PATH=$PATH:/opt/kafka_2.11-0.11.0.2/bin
   export PATH
+
+- Modificar el script de Kafka "kafka-run-class.sh" para forzarle a usar la versión 1.8 de Java:
+  # view /opt/kafka_2.11-0.11.0.2/bin/kafka-run-class.sh
+  ...
+  # Force java to use
+  JAVA_HOME=/usr/java/jdk1.8.0_131
+  
+  # Which java to use
+  if [ -z "$JAVA_HOME" ]; then
+    JAVA="java"
+  else
+    JAVA="$JAVA_HOME/bin/java"
+  fi
+  ...
 
 -----------------------------------------------------------------------------------------------------------------------------
 
@@ -69,7 +93,6 @@ Los pasos indicados a continuación deben realizarse en todos y cada uno de los 
   # view /etc/kafka/server.properties
   ...
   broker.id=1
-  listeners=PLAINTEXT://:9092
   log.dirs=/var/lib/data_ssd/kafka
   num.partitions=6
   offsets.topic.replication.factor=2
@@ -84,7 +107,7 @@ Los pasos indicados a continuación deben realizarse en todos y cada uno de los 
   # kafka-server-start.sh -daemon /etc/kafka/server.properties
   # jps
 
-- Arrancar un Topic de prueba:
+- Arrancar un Topic de prueba (ejecutar desde cualquier nodo del cluster de Kafka):
   # kafka-topics.sh --create --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=1073741824000 --topic raw_logs
   # kafka-topics.sh --create --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=4724464025600 --topic beautified_logs
   # kafka-topics.sh --create --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=107374182400 --topic aggregated_metrics
