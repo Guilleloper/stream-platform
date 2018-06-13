@@ -46,6 +46,15 @@ elif [ "$1" = "jobmanager" ]; then
     echo "akka.ask.timeout: 120 s" >> "$FLINK_HOME/conf/flink-conf.yaml"
     echo "config file: " && grep '^[^\n#]' "$FLINK_HOME/conf/flink-conf.yaml"
 
+    # Modificacion fichero hosts para correcta resolucion de nombres
+    echo "10.26.0.1 master" >> /etc/hosts
+    echo "10.26.0.2 worker1" >> /etc/hosts
+    echo "10.26.0.3 worker2" >> /etc/hosts
+    echo "10.26.0.4 worker3" >> /etc/hosts
+    echo "10.26.0.5 worker4" >> /etc/hosts
+    echo "10.26.0.6 worker5" >> /etc/hosts
+    echo "10.26.0.7 worker6" >> /etc/hosts
+
     echo "Starting Job Manager"
     exec $(drop_privs_cmd) flink "$FLINK_HOME/bin/jobmanager.sh" start-foreground cluster
 
@@ -61,6 +70,15 @@ elif [ "$1" = "taskmanager" ]; then
     echo "query.server.port: 6125" >> "$FLINK_HOME/conf/flink-conf.yaml"
     echo "akka.ask.timeout: 120 s" >> "$FLINK_HOME/conf/flink-conf.yaml"
     echo "config file: " && grep '^[^\n#]' "$FLINK_HOME/conf/flink-conf.yaml"
+
+    # Modificacion fichero hosts para correcta resolucion de nombres
+    echo "10.26.0.1 master" >> /etc/hosts
+    echo "10.26.0.2 worker1" >> /etc/hosts
+    echo "10.26.0.3 worker2" >> /etc/hosts
+    echo "10.26.0.4 worker3" >> /etc/hosts
+    echo "10.26.0.5 worker4" >> /etc/hosts
+    echo "10.26.0.6 worker5" >> /etc/hosts
+    echo "10.26.0.7 worker6" >> /etc/hosts
 
     echo "Starting Task Manager"
     exec $(drop_privs_cmd) flink "$FLINK_HOME/bin/taskmanager.sh" start-foreground
