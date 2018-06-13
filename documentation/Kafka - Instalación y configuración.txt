@@ -108,19 +108,19 @@ Los pasos indicados a continuación deben realizarse en todos y cada uno de los 
   # jps
 
 - Arrancar un Topic de prueba (ejecutar desde cualquier nodo del cluster de Kafka):
-  # kafka-topics.sh --create --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=1073741824000 --topic raw_logs
-  # kafka-topics.sh --create --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=4724464025600 --topic beautified_logs
-  # kafka-topics.sh --create --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=107374182400 --topic aggregated_metrics
-  # kafka-topics.sh --create --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=524288000 --topic control_flow
+  # kafka-topics.sh --create --zookeeper worker1:2181,worker2:2181,worker3:2181,worker4:2181,worker5:2181,worker6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=1073741824000 --topic raw_logs
+  # kafka-topics.sh --create --zookeeper worker1:2181,worker2:2181,worker3:2181,worker4:2181,worker5:2181,worker6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=4724464025600 --topic beautified_logs
+  # kafka-topics.sh --create --zookeeper worker1:2181,worker2:2181,worker3:2181,worker4:2181,worker5:2181,worker6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=107374182400 --topic aggregated_metrics
+  # kafka-topics.sh --create --zookeeper worker1:2181,worker2:2181,worker3:2181,worker4:2181,worker5:2181,worker6:2181 --partitions 6 --replication-factor 2 --config retention.bytes=524288000 --topic control_flow
 
 - Comprobar la correcta creación de los Topics:
-  # kafka-topics.sh --list --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181
+  # kafka-topics.sh --list --zookeeper worker1:2181,worker2:2181,worker3:2181,worker4:2181,worker5:2181,worker6:2181
   aggregated_metrics
   beautified_logs
   control_flow
   raw_logs
 
-  # kafka-topics.sh --describe --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181
+  # kafka-topics.sh --describe --zookeeper worker1:2181,worker2:2181,worker3:2181,worker4:2181,worker5:2181,worker6:2181
   Topic:aggregated_metrics        PartitionCount:6        ReplicationFactor:2     Configs:retention.bytes=107374182400
           Topic: aggregated_metrics       Partition: 0    Leader: 5       Replicas: 5,3   Isr: 5,3
           Topic: aggregated_metrics       Partition: 1    Leader: 6       Replicas: 6,4   Isr: 6,4
@@ -151,10 +151,10 @@ Los pasos indicados a continuación deben realizarse en todos y cada uno de los 
           Topic: raw_logs Partition: 5    Leader: 4       Replicas: 4,3   Isr: 4,3
 
 - Crear un Productor y volcar su salida al Topic de prueba:
-  # kafka-console-producer.sh --broker-list node1:9092,node2:9092,node3:9092,node4:9092,node5:9092,node6:9092 --topic raw_logs
+  # kafka-console-producer.sh --broker-list worker1:9092,worker2:9092,worker3:9092,worker4:9092,worker5:9092,worker6:9092 --topic raw_logs
 
 - Crear un Consumidor y leer el contenido del Topic de prueba:
-  # kafka-console-consumer.sh --zookeeper node1:2181,node2:2181,node3:2181,node4:2181,node5:2181,node6:2181 --from-beginning --topic raw_logs
+  # kafka-console-consumer.sh --zookeeper worker1:2181,worker2:2181,worker3:2181,worker4:2181,worker5:2181,worker6:2181 --from-beginning --topic raw_logs
 
 -----------------------------------------------------------------------------------------------------------------------------
 
