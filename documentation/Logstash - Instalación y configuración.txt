@@ -1,0 +1,128 @@
+##########################################
+# LOGSTASH - INSTALACIÓN Y CONFIGURACIÓN #
+##########################################
+
+
+1. INSTALACIÓN
+2. CONFIGURACIÓN
+3. COSAS PENDIENTES
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+1. INSTALACIÓN
+
+Los pasos indicados a continuación deben realizarse en todos y cada uno de los nodos que vayan a leer del topic de Kafka correspondiente y escribir en Elasticsearch:
+
+- Subir el software a /var/tmp:
+  # md5sum /var/tmp/logstash-6.0.1.rpm
+  3cae5046712038fa4526c65dd789ee2b  /var/tmp/logstash-6.0.1.rpm
+
+- Instalar Logstash:
+  # rpm -iv /var/tmp/logstash-6.0.1.rpm
+
+- Comprobar la correcta instalación:
+  # rpm -qi logstash
+  # /usr/share/logstash/bin/logstash --version
+
+- Desde un equipo con salida a internet, instalar la misma versión de Logstash e instalar el plugin Prune:
+  # /usr/share/logstash/bin/logstash-plugin install logstash-filter-prune
+  # /usr/share/logstash/bin/logstash-plugin list
+
+- Generar fichero para la instalación offline del plugin:
+  # /usr/share/logstash-plugin prepare-offline-pack logstash-filter-prune
+
+- Ubicar el fichero generado, en todos los nodos en donde se haya instalado Logstash:
+  # md5sum /var/tmp/logstash-offline-plugins-6.0.1.zip
+  dd8fd07e098fa6d246fcbd8e03bff426  /var/tmp/logstash-offline-plugins-6.0.1.zip
+
+- Instalar el plugin Prune:
+  # /usr/share/logstash/bin/logstash-plugin install file:///var/tmp/logstash-offline-plugins-6.0.1.zip
+
+- Borrar software:
+  # rm -fr /var/tmp/logstash-6.0.1.rpm /var/tmp/logstash-offline-plugins-6.0.1.zip
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+2. CONFIGURACIÓN
+
+- Crear ubicación para las necesidades de persistencia de datos de Logstash:
+  # mkdir /var/lib/data/logstash
+  # chown logstash:logstash /var/lib/data/logstash
+
+- Aplicar el siguiente cambio en la configuración general de Logstash:
+  # view logstash.yml
+  ...
+  path.data: /var/lib/data/logstash
+  ...
+
+- Crear fichero de configuración para escribir en Elasticsearch:
+  # view /etc/logstash/conf.d/kafka2elastic.conf
+  input
+  {
+      kafka
+      {
+          bootstrap_servers => ["worker1:9092", "worker2:9092", "worker3:9092", "worker4:9092", "worker5:9092", "worker6:9092"]
+          group_id => "logstash2elastic"
+          codec => json {
+              charset => "UTF-8"
+          }
+      }
+  }
+  filter
+  {
+      mutate { add_field => { "[@metadata][tag]" => "%{[tag]}" } } 
+      prune { blacklist_names => [ "^flink_auxiliar_.*", "^tag$" ] }
+  }
+  output 
+  {
+  elasticsearch {
+      hosts => ["ES-datanode1:9200", "ES-datanode2:9200", "ES-datanode3:9200", "ES-datanode4:9200", "ES-datanode5:9200", "ES-datanode6:9200", "ES-datanode7:9200", "datanode8:9200"]
+      index => "%{[@metadata][tag]}"
+      user => "<user>"
+      password => "<pass>"
+      manage_template => false
+      }
+  }
+  output
+  {
+  stdout { codec => rubydebug }
+  }
+
+- Crear fichero de configuración para escribir en InfluxDB:
+  # view /etc/logstash/conf.d/kafka2influx.conf
+  ¿?
+
+- Cambiar permisos del fichero de configuración:
+  # chown logstash:logstash kafka2elastic.conf
+
+- Añadir nodos de Elasticsearch en el fichero hosts:
+  # view /etc/hosts
+  ...
+  # Elasticsearch Data Nodes
+  10.26.0.11    ES-datanode1
+  10.26.0.12    ES-datanode2
+  10.26.0.13    ES-datanode3
+  10.26.0.14    ES-datanode4
+  10.26.0.15    ES-datanode5
+  10.26.0.16    ES-datanode6
+  10.26.0.17    ES-datanode7
+  10.26.0.18    ES-datanode8
+
+- Modificar la versión de Java a usar:
+  # view /etc/default/logstash
+  ...
+  JAVACMD="/usr/java/jdk1.8.0_131/bin/java"
+  JAVA_HOME="/usr/java/jdk1.8.0_131"
+  ...
+
+- Habilitar y arrancar el servicio Logstash:
+# systemctl enable logstash && systemctl start logstash
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+3. COSAS PENDIENTES
+
+- Definir el fichero de configuración de Logstash para lectura de Kafka y escritura en InfluxDB (/etc/logstash/conf.d/kafka2influx.conf).
+- Identificar las comunicaciones con otros sistemas (Kafka, Elasticsearch e InfluxDB), habilitar el servicio firewalld y configurar las correspondientes reglas.
+
+
